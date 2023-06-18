@@ -1,0 +1,84 @@
+version: "3"
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Fuerza:/var/www/html/Fuerza
+      - ./CoffeeCode:/var/www/html/CoffeeCode
+      - ./SoftWorks:/var/www/html/SoftWorks
+      - ./Docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./Docker/nginx/snippets:/etc/nginx/snippets
+      - ./Docker/nginx/ssl:/etc/nginx/ssl
+    networks:
+      - projects
+    depends_on:
+      - php8.1
+
+  mysql8.0:
+    platform: linux/x86_64
+    image: mysql:8.0
+    container_name: mysql8.0
+    #    command: mysqld --sql_mode=""
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3306:3306"
+    networks:
+      - projects
+
+  php8.1:
+    platform: linux/x86_64
+    build:
+      context: ./Docker
+      dockerfile: Dockerfile-php81
+      args:
+        UID: ${UID:-1000}
+        NODE_VERSION: 16
+    image: gerbton/php8.1-xdebug-node
+    container_name: php8.1
+    environment:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com": "your long token"}}'
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_HOST: mysql8.0
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_DEBUG_LOG: 1
+      WORDPRESS_DEBUG_DISPLAY: ''
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Fuerza:/var/www/html/Fuerza
+      - ./CoffeeCode:/var/www/html/CoffeeCode
+      - ./SoftWorks:/var/www/html/SoftWorks
+      - ./Docker/php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+      - ./Docker/php/conf.d/opcache.ini:/usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
+      - ./Docker/php/conf.d/error_reporting.ini:/usr/local/etc/php/conf.d/error_reporting.ini
+      - ./Docker/php/conf.d/php.ini:/usr/local/etc/php/conf.d/custom-php.ini
+    networks:
+      - projects
+    depends_on:
+      - mysql8.0
+
+  mailhog:
+    container_name: mailhog
+    platform: linux/x86_64
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - projects
+
+volumes:
+  db_data:
+
+networks:
+  projects:

@@ -13,14 +13,26 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     build-essential \
+    vim \
+    curl \
+    libedit-dev \
+    libicu-dev \
+    libxml2-dev \
+    libzip-dev \
+    libpng-dev \
+    libpq-dev \
+    libonig-dev \
     git \
     zip \
     unzip \
     python3
 
 RUN docker-php-ext-install -j$(nproc) \
+    gd \
+    mbstring \
     mysqli \
     pdo_mysql \
+    zip \
     opcache
 
 RUN pecl install xdebug  \
